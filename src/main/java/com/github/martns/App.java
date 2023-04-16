@@ -1,50 +1,45 @@
 package com.github.martns;
 
+import javax.security.auth.login.LoginException;
+
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
-import net.dv8tion.jda.api.Permission;
-import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
-import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
-import net.dv8tion.jda.api.interactions.commands.OptionType;
-import net.dv8tion.jda.api.interactions.commands.SlashCommandInteraction;
-import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.requests.GatewayIntent;
+
+
 
 /**
  * Hello world!
  *
  */
 public class App extends ListenerAdapter {
-    public static void main(String[] args) {
-        JDA jda = JDABuilder.createDefault("token")
-                .enableIntents(GatewayIntent.MESSAGE_CONTENT) // enables explicit access to message.getContentDisplay()
-                .build();
-        // You can also add event listeners to the already built JDA instance
-        // Note that some events may not be received if the listener is added after
-        // calling build()
-        // This includes events such as the ReadyEvent
-        jda.addEventListener(new App());
 
-        jda.updateCommands().addCommands(
-            Commands.slash("ping", "Calculate ping of the bot"),
-            Commands.slash("ban", "Ban a user from the server")
-                    .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.BAN_MEMBERS)) // only usable with ban permissions
-                    .setGuildOnly(true) // Ban command only works inside a guild
-                    .addOption(OptionType.USER, "user", "The user to ban", true) // required option of type user (target to ban)
-                    .addOption(OptionType.STRING, "reason", "The ban reason") // optional reason
-        ).queue();
+    public static void main(String[] args) throws LoginException {
+        JDA jda = JDABuilder.createDefault("MTA5NzI2NDMyNzgwMDY2NDE4NQ.GYkLUl.d5j45RXSLwg2br7PFGkgAvQwxIbFtqR3NPC1lI")
+        .enableIntents(GatewayIntent.MESSAGE_CONTENT) // enables explicit access to message.getContentDisplay()
+        .build();
+
+        jda.addEventListener(new App());
     }
 
     @Override
     public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
-        switch(event.getName()) {
-            case "ping":
-                long time = System.currentTimeMillis();
-                event.reply("Pong!").setEphemeral(true).flatMap(v -> event.getHook().editOriginalFormat("Pong %d ms", System.currentTimeMillis() - time)
-                ).queue(); 
+        // TODO Auto-generated method stub
+        System.out.println(event.getMember().getId());
+    }
+
+    @Override
+    public void onMessageReceived(MessageReceivedEvent event) {
+
+        switch(event.getMessage().getContentRaw()) {
+            case "/n Oi":
+            event.getMessage().reply("Olá, como posso te ajudar? Para ter uma lista de todos os meus comandos basta digitar /n Ajuda").mentionUsers(event.getAuthor().getId()).queue();
+            break;
+            case "/n Ajuda":
+            event.getMessage().reply("Comandos disponíveis até o momento: \n /n Ajuda").queue();
+        }
         }
     }
-}

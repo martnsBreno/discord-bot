@@ -57,6 +57,7 @@ public class App {
         AudioProvider provider = new LavaPlayerAudioProvider(player);
 
         commands.put("join", event -> {
+            event.getMessage().getChannel().block().createMessage("Entrando no voice chat!").block();
             final Member member = event.getMember().orElse(null);
             if (member != null) {
                 final VoiceState voiceState = member.getVoiceState().block();
@@ -75,6 +76,8 @@ public class App {
         commands.put("play", event -> {
             final String content = event.getMessage().getContent();
             final List<String> command = Arrays.asList(content.split(" "));
+            String link = command.get(1);
+            event.getMessage().getChannel().block().createMessage("Tocando: " + link + ", aproveite :)").block();
             playerManager.loadItem(command.get(1), scheduler);
         });
 
@@ -91,7 +94,7 @@ public class App {
 
                     for (final Map.Entry<String, Command> entry : commands.entrySet()) {
                         // We will be using ! as our "prefix" to any command in the system.
-                        if (content.startsWith('!' + entry.getKey())) {
+                        if (content.startsWith('*' + entry.getKey())) {
                             entry.getValue().execute(event);
                             break;
                         }
@@ -106,5 +109,25 @@ public class App {
                 .getChannel().block()
                 .createMessage("Pong!").block());
     }
+
+    static {
+        commands.put("ajuda", event -> event.getMessage()
+                .getChannel().block()
+                .createMessage("Comandos dísponiveis até o momento: \n" +
+                        "*ping : te respondo com um pong! \n " +
+                        "*join : entro na sua sala \n" +
+                        "*tocar <link>: canto uma música")
+                .block());
+    }
+
+    // static {
+    //     commands.put("kick", event -> event.getMessage()
+    //             .getMemberMentions().get(0).kick()
+    //             .and(event.getMessage()
+    //                     .getChannel().block()
+    //                     .createMessage("Usuário expulso!\n Para expulsar permanentemente use o comando *ban."))
+    //             .block());
+
+    // }
 
 }

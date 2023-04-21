@@ -11,18 +11,22 @@ https://discord.com/api/oauth2/authorize?client_id=1097264327800664185&permissio
 ### Moderação
 
 - Expulsar membro de forma temporária, o usuário pode voltar ao servidor ao ser convidado novamente
+
 ![comando-expulsar](assets/images/botkicking.jpg)
 
 - Banir membro de forma permanente:
+
 ![comando-banir](assets/images/botbanning.jpg)
 
 
 ### Recreativas
 
 - Entra no voice chat junto com o membro que executou o comando
+
 ![comando-join](assets/images/joincomando.jpg)
 
 - Toca a música/podcast do link passado pelo membro
+
 ![comando-play](assets/images/botplaying.jpg)
 
 ## Segurança e permissões

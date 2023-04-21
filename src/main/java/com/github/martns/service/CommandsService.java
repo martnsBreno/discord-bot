@@ -4,6 +4,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import com.github.martns.interfaces.Command;
 import com.github.martns.util.EnvToken;
@@ -15,18 +18,29 @@ import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager;
 import com.sedmelluq.discord.lavaplayer.source.AudioSourceManagers;
 import com.sedmelluq.discord.lavaplayer.track.playback.NonAllocatingAudioFrameBuffer;
 
+import discord4j.common.util.Snowflake;
 import discord4j.core.DiscordClientBuilder;
 import discord4j.core.GatewayDiscordClient;
+import discord4j.core.event.domain.interaction.ApplicationCommandInteractionEvent;
+import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.VoiceState;
+import discord4j.core.object.command.ApplicationCommandOption;
 import discord4j.core.object.entity.Member;
 import discord4j.core.object.entity.channel.VoiceChannel;
+import discord4j.discordjson.json.ApplicationCommandOptionData;
+import discord4j.discordjson.json.ApplicationCommandRequest;
 import discord4j.rest.util.Permission;
 import discord4j.voice.AudioProvider;
+import discord4j.voice.VoiceConnection;
 
 public class CommandsService {
 
     private final static Map<String, Command> commands = new HashMap<>();
+
+    private ScheduledExecutorService scheduler;
+
+    private ApplicationCommand applicationCommand = new ApplicationCommand();
 
     private EnvToken env = new EnvToken();
 
@@ -34,34 +48,28 @@ public class CommandsService {
 
     public void commandsInit() {
 
-        // Creates AudioPlayer instances and translates URLs to AudioTrack instances
         final AudioPlayerManager playerManager = new DefaultAudioPlayerManager();
 
-        // This is an optimization strategy that Discord4J can utilize.
-        // It is not important to understand
         playerManager.getConfiguration()
                 .setFrameBufferFactory(NonAllocatingAudioFrameBuffer::new);
 
-        // Allow playerManager to parse remote sources like YouTube links
         AudioSourceManagers.registerRemoteSources(playerManager);
 
-        // Create an AudioPlayer so Discord4J can receive audio data
         final AudioPlayer player = playerManager.createPlayer();
 
-        // We will be creating LavaPlayerAudioProvider in the next step
         AudioProvider provider = new LavaPlayerAudioProvider(player);
 
         commands.put("join", event -> {
-            event.getMessage().getChannel().block().createMessage("Entrando no voice chat!").block();
             final Member member = event.getMember().orElse(null);
+            final Snowflake memberId = event.getMember().get().getId();
             if (member != null) {
                 final VoiceState voiceState = member.getVoiceState().block();
                 if (voiceState != null) {
                     final VoiceChannel channel = voiceState.getChannel().block();
                     if (channel != null) {
-                        // join returns a VoiceConnection which would be required if we were
-                        // adding disconnection features, but for now we are just ignoring it.
-                        channel.join(spec -> spec.setProvider(provider)).block();
+                        VoiceConnection voiceCon = channel.join(spec -> spec.setProvider(provider)).block();
+                        event.getMessage().getChannel().block().createMessage("Entrando no voice chat!").block();
+                        startChannelStatusChecker(memberId, voiceCon, channel, event);
                     }
                 }
             }
@@ -84,18 +92,45 @@ public class CommandsService {
                 // to be done, but instead of blocking the thread, waiting for it
                 // to finish, it will just execute the results asynchronously.
                 .subscribe(event -> {
-                    // 3.1 Message.getContent() is a String
                     final String content = event.getMessage().getContent();
 
                     for (final Map.Entry<String, Command> entry : commands.entrySet()) {
-                        // We will be using ! as our "prefix" to any command in the system.
                         if (content.startsWith('*' + entry.getKey())) {
                             entry.getValue().execute(event);
                             break;
                         }
                     }
                 });
+
+        applicationCommand.initAppCommand(client);
+
         client.onDisconnect().block();
+    }
+
+    private void startChannelStatusChecker(Snowflake memberId, VoiceConnection voiceCon, VoiceChannel channel,
+            MessageCreateEvent event) {
+
+        if (scheduler == null) {
+            scheduler = Executors.newSingleThreadScheduledExecutor();
+            scheduler.scheduleAtFixedRate(() -> {
+
+                if (!channel.isMemberConnected(memberId).block().booleanValue()) {
+                    event.getMessage().getChannel().block()
+                            .createMessage(
+                                    "Saindo do canal, a pessoa que me convidou para a chamada se desconectou por muito tempo, para me chamar de volta bastar usar *join novamente")
+                            .block();
+                    voiceCon.disconnect().block();
+                    stopChannelStatusChecker();
+                }
+            }, 60, 60, TimeUnit.SECONDS);
+        }
+    }
+
+    private void stopChannelStatusChecker() {
+        if (scheduler != null) {
+            scheduler.shutdown();
+            scheduler = null;
+        }
     }
 
     static {
@@ -108,9 +143,10 @@ public class CommandsService {
         commands.put("ajuda", event -> event.getMessage()
                 .getChannel().block()
                 .createMessage("Comandos dísponiveis até o momento: \n" +
-                        "*ping : te respondo com um pong! \n " +
                         "*join : entro na sua sala \n" +
-                        "*tocar <link>: canto uma música")
+                        "*tocar <link>: toca uma música \n" +
+                        "*kick: expulsa o usuário mencionado \n" +
+                        "*ban: bane o usuário mencionado")
                 .block());
     }
 
@@ -131,8 +167,11 @@ public class CommandsService {
                 } else {
 
                     event.getMessage()
-                            .getMemberMentions().get(0).kick()
-                            .and(event.getMessage().getChannel().block().createMessage("O usuário foi expulso, porém pode voltar ao receber um convite.")).block();
+                            .getMemberMentions().get(0).kick().block();
+
+                    event.getMessage().getChannel().block()
+                            .createMessage("O usuário foi expulso, porém pode voltar ao receber um convite.")
+                            .block();
                 }
 
             }

@@ -11,20 +11,22 @@ https://discord.com/api/oauth2/authorize?client_id=1097264327800664185&permissio
 ### Moderação
 
 - Expulsar membro de forma temporária, o usuário pode voltar ao servidor ao ser convidado novamente
-![comando-expulsar](imagens/expulsar.jpg)
+![comando-expulsar](assets/images/botkicking.jpg)
 
 - Banir membro de forma permanente:
-![comando-banir](imagens/banir.jpg)
+![comando-banir](assets/images/botbanning.jpg)
 
 
 ### Recreativas
 
 - Entra no voice chat junto com o membro que executou o comando
-![comando-join](imagens/join.jpg)
+![comando-join](assets/images/joincomando.jpg)
 
 - Toca a música/podcast do link passado pelo membro
-![comando-play](imagens/play.jpg)
+![comando-play](assets/images/botplaying.jpg)
 
 ## Segurança e permissões
 
 Para executar todas suas funções de maneira plena, o bot necessita de permissão de administrador no servidor, as funções recreativas como chamar o bot para o canal de voz e escutar uma música pode ser executada por qualquer membro do servidor, enquanto as funções de moderação só podem ser executadas por membros com as devidas autorizações.
+
+![failing-to-ban](assets/images/nokickpermission.jpg)
